@@ -1,7 +1,7 @@
 @extends('backend/layouts/default')
 
 {{-- Traduction Laravel-france --}}
-{{--  Maj:6/06/2013 - backend/users/index.php --}}
+{{--  Maj:17/06/2013 - backend/users/index.blade.php --}}
 
 {{-- Page title --}}
 @section('title')
@@ -16,7 +16,9 @@
 		{{Lang::get('backend/users/actions.index.description')}}
 
 		<div class="pull-right">
-			<a href="{{ route('create/user') }}" class="btn btn-small btn-info"><i class="icon-plus-sign icon-white"></i> {{Lang::get('backend/users/actions.buttons.create')}}</a>
+      @if(Sentry::getUser()->hasAccess('site.users.create'))
+          <a href="{{ route('create/user') }}" class="btn btn-small btn-info"><i class="icon-plus-sign icon-white"></i> {{Lang::get('backend/users/actions.buttons.create')}}</a>
+      @endif
 		</div>
 	</h3>
 </div>
@@ -48,16 +50,19 @@
 			<td>{{Lang::get('backend/general.' . ($user->isActivated() ? 'yes' : 'no'))}}</td>
 			<td>{{ $user->created_at->diffForHumans() }}</td>
 			<td>
-				<a href="{{ route('update/user', $user->id) }}" class="btn btn-mini">{{Lang::get('buttons.edit')}}</a>
-
-				@if ( ! is_null($user->deleted_at))
-				<a href="{{ route('restore/user', $user->id) }}" class="btn btn-mini btn-warning">{{Lang::get('buttons.restore')}}</a>
-				@else
-				@if (Sentry::getId() !== $user->id)
-				<a href="{{ route('delete/user', $user->id) }}" class="btn btn-mini btn-danger">{{Lang::get('buttons.delete')}}</a>
-				@else
-				<span class="btn btn-mini btn-danger disabled">{{Lang::get('buttons.delete')}}</span>
-				@endif
+        @if(Sentry::getUser()->hasAccess('site.users.edit'))
+            <a href="{{ route('update/user', $user->id) }}" class="btn btn-mini">{{Lang::get('buttons.edit')}}</a>
+        @endif
+        @if(Sentry::getUser()->hasAccess('site.users.delete'))
+          @if ( ! is_null($user->deleted_at))
+              <a href="{{ route('restore/user', $user->id) }}" class="btn btn-mini btn-warning">{{Lang::get('buttons.restore')}}</a>
+          @else
+              @if (Sentry::getId() !== $user->id)
+                  <a href="{{ route('delete/user', $user->id) }}" class="btn btn-mini btn-danger">{{Lang::get('buttons.delete')}}</a>
+              @else
+                  <span class="btn btn-mini btn-danger disabled">{{Lang::get('buttons.delete')}}</span>
+              @endif
+          @endif
 				@endif
 			</td>
 		</tr>

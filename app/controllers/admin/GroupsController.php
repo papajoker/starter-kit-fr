@@ -4,7 +4,6 @@ use AdminController;
 use Cartalyst\Sentry\Groups\GroupExistsException;
 use Cartalyst\Sentry\Groups\GroupNotFoundException;
 use Cartalyst\Sentry\Groups\NameRequiredException;
-use Config;
 use Input;
 use Lang;
 use Redirect;
@@ -21,6 +20,13 @@ class GroupsController extends AdminController {
 	 */
 	public function getIndex()
 	{
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.groups.view'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
+
 		// Grab all the groups
 		$groups = Sentry::getGroupProvider()->createModel()->paginate();
 
@@ -35,15 +41,20 @@ class GroupsController extends AdminController {
 	 */
 	public function getCreate()
 	{
-		// Get all the available permissions
-		$permissions = Config::get('permissions');
-		$this->encodeAllPermissions($permissions, true);
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.groups.create'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
 
-		// Selected permissions
-		$selectedPermissions = Input::old('permissions', array());
+    // Prepare all the available permissions depend on domains
+    $permissions = array();
+    $domains = array();
+    $this->preparePermissionsAndDomains($permissions, $domains);
 
 		// Show the page
-		return View::make('backend/groups/create', compact('permissions', 'selectedPermissions'));
+		return View::make('backend/groups/create', compact('domains', 'permissions'));
 	}
 
 	/**
@@ -70,20 +81,14 @@ class GroupsController extends AdminController {
 
 		try
 		{
-			// We need to reverse the UI specific logic for our
-			// permissions here before we create the user.
-			$permissions = Input::get('permissions', array());
-			$this->decodePermissions($permissions);
-			app('request')->request->set('permissions', $permissions);
-
 			// Get the inputs, with some exceptions
 			$inputs = Input::except('_token');
 
 			// Was the group created?
 			if ($group = Sentry::getGroupProvider()->create($inputs))
 			{
-				// Redirect to the new group page
-				return Redirect::route('update/group', $group->id)->with('success', Lang::get('backend/groups/messages.success.created'));
+				// Redirect to the groups management page
+				return Redirect::route('groups')->with('success', Lang::get('backend/groups/messages.success.created'));
 			}
 
 			// Redirect to the new group page
@@ -110,19 +115,26 @@ class GroupsController extends AdminController {
 	 */
 	public function getEdit($id = null)
 	{
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.groups.edit'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
 		try
 		{
 			// Get the group information
 			$group = Sentry::getGroupProvider()->findById($id);
 
-			// Get all the available permissions
-			$permissions = Config::get('permissions');
-			$this->encodeAllPermissions($permissions, true);
+      // Prepare all the available permissions depend on domains
+      $permissions = array();
+      $domains = array();
+      $this->preparePermissionsAndDomains($permissions, $domains);
 
 			// Get this group permissions
 			$groupPermissions = $group->getPermissions();
-			$this->encodePermissions($groupPermissions);
-			$groupPermissions = array_merge($groupPermissions, Input::old('permissions', array()));
+
+			$permissions = array_merge($permissions, $groupPermissions);
 		}
 		catch (GroupNotFoundException $e)
 		{
@@ -131,7 +143,7 @@ class GroupsController extends AdminController {
 		}
 
 		// Show the page
-		return View::make('backend/groups/edit', compact('group', 'permissions', 'groupPermissions'));
+		return View::make('backend/groups/edit', compact('group', 'domains', 'permissions'));
 	}
 
 	/**
@@ -142,12 +154,6 @@ class GroupsController extends AdminController {
 	 */
 	public function postEdit($id = null)
 	{
-		// We need to reverse the UI specific logic for our
-		// permissions here before we update the group.
-		$permissions = Input::get('permissions', array());
-		$this->decodePermissions($permissions);
-		app('request')->request->set('permissions', $permissions);
-
 		try
 		{
 			// Get the group information
@@ -183,8 +189,8 @@ class GroupsController extends AdminController {
 			// Was the group updated?
 			if ($group->save())
 			{
-				// Redirect to the group page
-				return Redirect::route('update/group', $id)->with('success', Lang::get('backend/groups/messages.success.updated'));
+				// Redirect to the groups management page
+				return Redirect::route('groups')->with('success', Lang::get('backend/groups/messages.success.updated'));
 			}
 			else
 			{
@@ -209,6 +215,12 @@ class GroupsController extends AdminController {
 	 */
 	public function getDelete($id = null)
 	{
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.groups.delete'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
 		try
 		{
 			// Get group information

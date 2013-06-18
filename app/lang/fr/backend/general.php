@@ -1,7 +1,7 @@
 <?php
 
 # Traduction Laravel-france
-# Maj:6/06/2013 - backend/general.php
+# Maj:16/06/2013 - backend/general.php
 
 return array(
   'tabs'  => array(
@@ -10,7 +10,4 @@ return array(
           ),
   'yes' => 'Oui',
   'no'  => 'Non',
-  'allow' => 'Autorisé',
-  'deny'  => 'Refusé',
-  'inherit' => 'Hérité'
 );

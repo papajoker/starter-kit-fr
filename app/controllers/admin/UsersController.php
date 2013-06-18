@@ -5,7 +5,6 @@ use Cartalyst\Sentry\Users\LoginRequiredException;
 use Cartalyst\Sentry\Users\PasswordRequiredException;
 use Cartalyst\Sentry\Users\UserExistsException;
 use Cartalyst\Sentry\Users\UserNotFoundException;
-use Config;
 use Input;
 use Lang;
 use Redirect;
@@ -35,6 +34,13 @@ class UsersController extends AdminController {
 	 */
 	public function getIndex()
 	{
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.users.view'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
+
 		// Grab all the users
 		$users = Sentry::getUserProvider()->createModel();
 
@@ -66,22 +72,26 @@ class UsersController extends AdminController {
 	 */
 	public function getCreate()
 	{
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.users.create'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
+
 		// Get all the available groups
 		$groups = Sentry::getGroupProvider()->findAll();
 
 		// Selected groups
 		$selectedGroups = Input::old('groups', array());
 
-		// Get all the available permissions
-		$permissions = Config::get('permissions');
-		$this->encodeAllPermissions($permissions);
-
-		// Selected permissions
-		$selectedPermissions = Input::old('permissions', array('superuser' => -1));
-		$this->encodePermissions($selectedPermissions);
+    // Prepare all the available permissions depend on domains
+    $permissions = array();
+    $domains = array();
+    $this->preparePermissionsAndDomains($permissions, $domains);
 
 		// Show the page
-		return View::make('backend/users/create', compact('groups', 'selectedGroups', 'permissions', 'selectedPermissions'));
+		return View::make('backend/users/create', compact('groups', 'selectedGroups', 'domains', 'permissions'));
 	}
 
 	/**
@@ -103,12 +113,6 @@ class UsersController extends AdminController {
 
 		try
 		{
-			// We need to reverse the UI specific logic for our
-			// permissions here before we create the user.
-			$permissions = Input::get('permissions', array());
-			$this->decodePermissions($permissions);
-			app('request')->request->set('permissions', $permissions);
-
 			// Get the inputs, with some exceptions
 			$inputs = Input::except('csrf_token', 'password_confirm', 'groups');
 
@@ -126,8 +130,8 @@ class UsersController extends AdminController {
 				// Prepare the success message
 				$success = Lang::get('backend/users/messages.success.created');
 
-				// Redirect to the new user page
-				return Redirect::route('update/user', $user->id)->with('success', $success);
+				// Redirect to the user management page
+				return Redirect::route('users')->with('success', $success);
 			}
 
 			// Prepare the error message
@@ -161,6 +165,12 @@ class UsersController extends AdminController {
 	 */
 	public function getEdit($id = null)
 	{
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.users.edit'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
 		try
 		{
 			// Get the user information
@@ -170,15 +180,18 @@ class UsersController extends AdminController {
 			$userGroups = $user->groups()->lists('name', 'group_id');
 
 			// Get this user permissions
-			$userPermissions = array_merge(Input::old('permissions', array('superuser' => -1)), $user->getPermissions());
-			$this->encodePermissions($userPermissions);
+			$userPermissions = $user->getPermissions();
 
 			// Get a list of all the available groups
 			$groups = Sentry::getGroupProvider()->findAll();
 
-			// Get all the available permissions
-			$permissions = Config::get('permissions');
-			$this->encodeAllPermissions($permissions);
+      // Prepare all the available permissions depend on domains
+      $permissions = array();
+      $domains = array();
+      $this->preparePermissionsAndDomains($permissions, $domains);
+
+      // Merge all permissions with this user's permissions
+      $permissions = array_merge($permissions, $user->getPermissions());
 		}
 		catch (UserNotFoundException $e)
 		{
@@ -190,7 +203,7 @@ class UsersController extends AdminController {
 		}
 
 		// Show the page
-		return View::make('backend/users/edit', compact('user', 'groups', 'userGroups', 'permissions', 'userPermissions'));
+		return View::make('backend/users/edit', compact('user', 'groups', 'userGroups', 'domains', 'permissions'));
 	}
 
 	/**
@@ -201,12 +214,6 @@ class UsersController extends AdminController {
 	 */
 	public function postEdit($id = null)
 	{
-		// We need to reverse the UI specific logic for our
-		// permissions here before we update the user.
-		$permissions = Input::get('permissions', array());
-		$this->decodePermissions($permissions);
-		app('request')->request->set('permissions', $permissions);
-
 		try
 		{
 			// Get the user information
@@ -250,7 +257,7 @@ class UsersController extends AdminController {
 			$user->last_name   = Input::get('last_name');
 			$user->email       = Input::get('email');
 			$user->activated   = Input::get('activated', $user->activated);
-			$user->permissions = Input::get('permissions');
+      $user->permissions = Input::get('permissions');
 
 			// Do we want to update the user password?
 			if ($password)
@@ -291,8 +298,8 @@ class UsersController extends AdminController {
 				// Prepare the success message
 				$success = Lang::get('backend/users/messages.success.updated');
 
-				// Redirect to the user page
-				return Redirect::route('update/user', $id)->with('success', $success);
+				// Redirect to the user management page
+				return Redirect::route('users')->with('success', $success);
 			}
 
 			// Prepare the error message
@@ -315,6 +322,12 @@ class UsersController extends AdminController {
 	 */
 	public function getDelete($id = null)
 	{
+    // Check if the user has access to this page
+    if ( ! Sentry::getUser()->hasAccess('site.users.delete'))
+    {
+      // Show the insufficient permissions page
+      return Redirect::route('groups')->with('error', Lang::get('backend/messages.error.acces_deny'));
+    }
 		try
 		{
 			// Get user information

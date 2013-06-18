@@ -13,76 +13,43 @@ class AdminController extends AuthorizedController {
 		$this->beforeFilter('admin-auth');
 	}
 
-
-
 	/**
-	 * Encodes the permissions so that they are form friendly.
+	 * Prepare all the available permissions depend on domains so that they are form friendly.
 	 *
-	 * @param  array  $permissions
-	 * @param  bool   $removeSuperUser
-	 * @return void
-	 */
-	protected function encodeAllPermissions(array &$allPermissions, $removeSuperUser = false)
-	{
-		foreach ($allPermissions as $area => &$permissions)
-		{
-			foreach ($permissions as $index => &$permission)
-			{
-				if ($removeSuperUser == true and $permission['permission'] == 'superuser')
-				{
-					unset($permissions[$index]);
-					continue;
-				}
-
-				$permission['can_inherit'] = ($permission['permission'] != 'superuser');
-				$permission['permission']  = base64_encode($permission['permission']);
-			}
-
-			// If we removed a super user permission and there are
-			// none left, let's remove the group
-			if ($removeSuperUser == true and empty($permissions))
-			{
-				unset($allPermissions[$area]);
-			}
-		}
-	}
-
-	/**
-	 * Encodes user permissions to match that of the encoded "all"
-	 * permissions above.
-	 *
+	 * @param  array  $domains
 	 * @param  array  $permissions
 	 * @return void
 	 */
-	protected function encodePermissions(array &$permissions)
+	protected function preparePermissionsAndDomains(array &$permissions, array &$domains)
 	{
-		$encodedPermissions = array();
+      // Get all the available permissions with cached query
+      $allPermissions = DB::table('permissions')->remember(30)->lists('name');
 
-		foreach ($permissions as $permission => $access)
-		{
-			$encodedPermissions[base64_encode($permission)] = $access;
-		}
+      foreach ($allPermissions as $key => $value)
+      {
+        $permissions[$value] = 0;
+        list($domain, $name, $action) = explode('.', $value);
 
-		$permissions = $encodedPermissions;
-	}
+        // Add it to our domains if it's not already there.
+        if (!empty($domain) && !array_key_exists($domain, $domains))
+        {
+          $domains[$domain] = array();
+        }
 
-	/**
-	 * Decodes user permissions to match that of the encoded "all"
-	 * permissions above.
-	 *
-	 * @param  array  $permissions
-	 * @return void
-	 */
-	protected function decodePermissions(array &$permissions)
-	{
-		$decodedPermissions = array();
+        $domains[$domain][$name][] = $action;
 
-		foreach ($permissions as $permission => $access)
-		{
-			$decodedPermissions[base64_decode($permission)] = $access;
-		}
+        // Store the actions separately for building the table header
+        if (!isset($domains[$domain]['actions']))
+        {
+          $domains[$domain]['actions'] = array();
+        }
 
-		$permissions = $decodedPermissions;
-	}
+        if (!in_array($action, $domains[$domain]['actions']))
+        {
+          $domains[$domain]['actions'][] = $action;
+        }
+
+      }
+  }
 
 }

@@ -36,6 +36,17 @@ Route::group(array('prefix' => 'admin'), function()
 		Route::get('{groupId}/restore', array('as' => 'restore/group', 'uses' => 'Controllers\Admin\GroupsController@getRestore'));
 	});
 
+	# Permission Management
+	Route::group(array('prefix' => 'permissions'), function()
+	{
+		Route::get('/', array('as' => 'permissions', 'uses' => 'Controllers\Admin\PermissionsController@getIndex'));
+		Route::get('create', array('as' => 'create/permission', 'uses' => 'Controllers\Admin\PermissionsController@getCreate'));
+		Route::post('create', 'Controllers\Admin\PermissionsController@postCreate');
+		Route::get('{permissionId}/edit', array('as' => 'update/permission', 'uses' => 'Controllers\Admin\PermissionsController@getEdit'));
+		Route::post('{permissionId}/edit', 'Controllers\Admin\PermissionsController@postEdit');
+		Route::get('{permissionId}/delete', array('as' => 'delete/permission', 'uses' => 'Controllers\Admin\PermissionsController@getDelete'));
+	});
+
 	# Dashboard
 	Route::get('/', array('as' => 'admin', 'uses' => 'Controllers\Admin\DashboardController@getIndex'));
 

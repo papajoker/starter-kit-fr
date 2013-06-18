@@ -1,11 +1,11 @@
 @extends('backend/layouts/default')
 
 {{-- Traduction Laravel-france --}}
-{{--  Maj:6/06/2013 - backend/groups/index.php --}}
+{{--  Maj:17/06/2013 - backend/groups/index.blade.php --}}
 
 {{-- Page title --}}
 @section('title')
-{{Lang::get('backend/groups/actions.index.title')}} ::
+{{Lang::get('backend/groups/actions.index.title')}}
 @parent
 @stop
 
@@ -16,7 +16,9 @@
 		{{Lang::get('backend/groups/actions.index.description')}}
 
 		<div class="pull-right">
-			<a href="{{ route('create/group') }}" class="btn btn-small btn-info"><i class="icon-plus-sign icon-white"></i> {{Lang::get('backend/groups/actions.buttons.create')}}</a>
+      @if(Sentry::getUser()->hasAccess('site.groups.create'))
+          <a href="{{ route('create/group') }}" class="btn btn-small btn-info"><i class="icon-plus-sign icon-white"></i> {{Lang::get('backend/groups/actions.buttons.create')}}</a>
+      @endif
 		</div>
 	</h3>
 </div>
@@ -42,8 +44,12 @@
 			<td>{{ $group->users()->count() }}</td>
 			<td>{{ $group->created_at->diffForHumans() }}</td>
 			<td>
-				<a href="{{ route('update/group', $group->id) }}" class="btn btn-mini">{{Lang::get('buttons.edit')}}</a>
-				<a href="{{ route('delete/group', $group->id) }}" class="btn btn-mini btn-danger">{{Lang::get('buttons.delete')}}</a>
+        @if(Sentry::getUser()->hasAccess('site.groups.edit'))
+            <a href="{{ route('update/group', $group->id) }}" class="btn btn-mini">{{Lang::get('buttons.edit')}}</a>
+        @endif
+        @if(Sentry::getUser()->hasAccess('site.groups.delete'))
+            <a href="{{ route('delete/group', $group->id) }}" class="btn btn-mini btn-danger">{{Lang::get('buttons.delete')}}</a>
+        @endif
 			</td>
 		</tr>
 		@endforeach

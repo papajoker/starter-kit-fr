@@ -1,7 +1,7 @@
 @extends('backend/layouts/default')
 
 {{-- Traduction Laravel-france --}}
-{{--  Maj:6/06/2013 - backend/users/edit.php --}}
+{{--  Maj:16/06/2013 - backend/users/create.blade.php --}}
 
 {{-- Page title --}}
 @section('title')
@@ -92,6 +92,29 @@
 				</div>
 			</div>
 
+			<!-- Super User -->
+      <div class="control-group">
+        <label class="control-label">{{Lang::get('backend/users/labels.superuser')}}</label>
+        <div class="controls">
+          <div class="radio inline">
+            <label for="perm_superuser_allow" >
+              <input type="radio" value="1" id="perm_superuser_allow" name="permissions[superuser]" >
+              {{Lang::get('backend/general.yes')}}
+            </label>
+          </div>
+
+          <div class="radio inline">
+            <label for="perm_superuser_deny" >
+              <input type="radio" value="0" id="perm_superuser_deny" name="permissions[superuser]" checked >
+              {{Lang::get('backend/general.no')}}
+            </label>
+          </div>
+					<span class="help-block">
+						{{Lang::get('backend/users/labels.superuser_help')}}
+					</span>
+        </div>
+      </div>
+
 			<!-- Groups -->
 			<div class="control-group {{ $errors->has('groups') ? 'error' : '' }}">
 				<label class="control-label" for="groups">{{Lang::get('backend/users/labels.groups')}}</label>
@@ -111,47 +134,70 @@
 
 		<!-- Permissions tab -->
 		<div class="tab-pane" id="tab-permissions">
-			<div class="control-group">
-				<div class="controls">
+      <fieldset>
+        <legend>{{Lang::get('backend/permissions/labels.user_permissions')}}</legend>
+        <span class="help-block">
+          {{Lang::get('backend/permissions/labels.user_permissions_check_note')}}
+        </span>
 
-					@foreach ($permissions as $area => $permissions)
-					<fieldset>
-						<legend>{{ $area }}</legend>
+        @foreach ($domains as $domain_name => $fields)
+        <table class="matrix table table-striped">
+          <thead>
+            <tr>
+              <th style="width: 150px"><b style="color: #222">{{Lang::get('backend/modules/'.$domain_name.'.domain')}}</b></th>
+              @foreach ($fields['actions'] as $action)
+                <th class="text-center">{{Lang::get('backend/permissions.'.$action)}}</th>
+              @endforeach
+            </tr>
+          </thead>
+          <tbody>
+            @foreach ($fields as $field_name => $field_actions)
+              @if ($field_name != 'actions')
+              <tr>
+                <td class="matrix-title"><b>{{Lang::get('backend/modules/'.$domain_name.'.controllers.'.$field_name)}}</b></td>
+                @foreach ($fields['actions'] as $action)
+                  <td class="text-center">
 
-						@foreach ($permissions as $permission)
-						<div class="control-group">
-							<label class="control-group">{{ $permission['label'] }}</label>
+                    @if (in_array($action, $field_actions))
 
-							<div class="radio inline">
-								<label for="{{ $permission['permission'] }}_allow" onclick="">
-									<input type="radio" value="1" id="{{ $permission['permission'] }}_allow" name="permissions[{{ $permission['permission'] }}]"{{ (array_get($selectedPermissions, $permission['permission']) === 1 ? ' checked="checked"' : '') }}>
-									{{Lang::get('backend/general.allow')}}
-								</label>
-							</div>
+                        <div class="control-group">
+                          <div class="radio">
+                            <label for="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_allow" >
+                              <input type="radio" value="1" id="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_allow" name="permissions[{{ $domain_name }}.{{ $field_name }}.{{ $action }}]">
+                              {{Lang::get('backend/permissions/labels.allow')}}
+                            </label>
+                          </div>
 
-							<div class="radio inline">
-								<label for="{{ $permission['permission'] }}_deny" onclick="">
-									<input type="radio" value="-1" id="{{ $permission['permission'] }}_deny" name="permissions[{{ $permission['permission'] }}]"{{ (array_get($selectedPermissions, $permission['permission']) === -1 ? ' checked="checked"' : '') }}>
-									{{Lang::get('backend/general.deny')}}
-								</label>
-							</div>
+                          <div class="radio">
+                            <label for="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_deny" >
+                              <input type="radio" value="0" id="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_deny" name="permissions[{{ $domain_name }}.{{ $field_name }}.{{ $action }}]" checked="checked">
+                              {{Lang::get('backend/permissions/labels.deny')}}
+                            </label>
+                          </div>
 
-							@if ($permission['can_inherit'])
-							<div class="radio inline">
-								<label for="{{ $permission['permission'] }}_inherit" onclick="">
-									<input type="radio" value="0" id="{{ $permission['permission'] }}_inherit" name="permissions[{{ $permission['permission'] }}]"{{ ( ! array_get($selectedPermissions, $permission['permission']) ? ' checked="checked"' : '') }}>
-									{{Lang::get('backend/general.inherit')}}
-								</label>
-							</div>
-							@endif
-						</div>
-						@endforeach
+                          <div class="radio">
+                            <label for="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_inherit" >
+                              <input type="radio" value="-1" id="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_inherit" name="permissions[{{ $domain_name }}.{{ $field_name }}.{{ $action }}]">
+                              {{Lang::get('backend/permissions/labels.inherit')}}
+                            </label>
+                          </div>
+                        </div>
 
-					</fieldset>
-					@endforeach
+                    @else
+                        <span class="help-inline small">{{Lang::get('backend/permissions/labels.not_applicable')}}</span>
+                    @endif
 
-				</div>
-			</div>
+                  </td>
+                @endforeach
+              </tr>
+              @endif
+            @endforeach
+          </tbody>
+        </table>
+        <br/>
+        @endforeach
+
+      </fieldset>
 		</div>
 	</div>
 

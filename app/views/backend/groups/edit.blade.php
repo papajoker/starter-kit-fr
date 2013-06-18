@@ -1,11 +1,11 @@
 @extends('backend/layouts/default')
 
 {{-- Traduction Laravel-france --}}
-{{--  Maj:6/06/2013 - backend/groups/edit.php --}}
+{{--  Maj:17/06/2013 - backend/groups/edit.blade.php --}}
 
 {{-- Page title --}}
 @section('title')
-{{Lang::get('backend/groups/actions.edit.title')}} ::
+{{Lang::get('backend/groups/actions.edit.title')}}
 @parent
 @stop
 
@@ -21,74 +21,81 @@
 	</h3>
 </div>
 
-<!-- Tabs -->
-<ul class="nav nav-tabs">
-	<li class="active"><a href="#tab-general" data-toggle="tab">{{Lang::get('backend/general.tabs.general')}}</a></li>
-	<li><a href="#tab-permissions" data-toggle="tab">{{Lang::get('backend/general.tabs.permissions')}}</a></li>
-</ul>
-
 <form class="form-horizontal" method="post" action="" autocomplete="off">
 	<!-- CSRF Token -->
 	<input type="hidden" name="_token" value="{{ csrf_token() }}" />
 
-	<!-- Tabs Content -->
-	<div class="tab-content">
-		<!-- General tab -->
-		<div class="tab-pane active" id="tab-general">
-			<!-- Name -->
-			<div class="control-group {{ $errors->has('name') ? 'error' : '' }}">
-				<label class="control-label" for="name">{{Lang::get('backend/groups/labels.name')}}</label>
-				<div class="controls">
-					<input type="text" name="name" id="name" value="{{ Input::old('name', $group->name) }}" />
-					{{ $errors->first('name', '<span class="help-inline">:message</span>') }}
-				</div>
-			</div>
-		</div>
+  <!-- Name -->
+  <div class="control-group {{ $errors->has('name') ? 'error' : '' }}">
+    <label class="control-label" for="name">{{Lang::get('backend/groups/labels.name')}}</label>
+    <div class="controls">
+      <input type="text" name="name" id="name" value="{{ Input::old('name', $group->name) }}" />
+      {{ $errors->first('name', '<span class="help-inline">:message</span>') }}
+    </div>
+  </div>
 
-		<!-- Permissions tab -->
-		<div class="tab-pane" id="tab-permissions">
-			<div class="controls">
-				<div class="control-group">
+  <fieldset>
+    <legend>{{Lang::get('backend/permissions/labels.group_permissions')}}</legend>
+    <span class="help-block">
+      {{Lang::get('backend/permissions/labels.group_permissions_check_note')}}
+    </span>
 
-					@foreach ($permissions as $area => $permissions)
-					<fieldset>
-						<legend>{{ $area }}</legend>
+    @foreach ($domains as $domain_name => $fields)
+    <table class="matrix table table-striped">
+      <thead>
+        <tr>
+          <th style="width: 150px"><b style="color: #222">{{Lang::get('backend/modules/'.$domain_name.'.domain')}}</b></th>
+          @foreach ($fields['actions'] as $action)
+            <th class="text-center">{{Lang::get('backend/permissions.'.$action)}}</th>
+          @endforeach
+        </tr>
+      </thead>
+      <tbody>
+        @foreach ($fields as $field_name => $field_actions)
+          @if ($field_name != 'actions')
+          <tr>
+            <td class="matrix-title"><b>{{Lang::get('backend/modules/'.$domain_name.'.controllers.'.$field_name)}}</b></td>
+            @foreach ($fields['actions'] as $action)
+              <td class="text-center">
 
-						@foreach ($permissions as $permission)
-						<div class="control-group">
-							<label class="control-group">{{ $permission['label'] }}</label>
+                @if (in_array($action, $field_actions))
 
-							<div class="radio inline">
-								<label for="{{ $permission['permission'] }}_allow" onclick="">
-									<input type="radio" value="1" id="{{ $permission['permission'] }}_allow" name="permissions[{{ $permission['permission'] }}]"{{ (array_get($groupPermissions, $permission['permission']) === 1 ? ' checked="checked"' : '') }}>
-									{{Lang::get('backend/general.allow')}}
-								</label>
-							</div>
+                    <div class="control-group">
+                      <div class="radio">
+                        <label for="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_allow" >
+                          <input type="radio" value="1" id="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_allow" name="permissions[{{ $domain_name }}.{{ $field_name }}.{{ $action }}]" {{ ($permissions["$domain_name.$field_name.$action"] == 1 ? ' checked="checked"' : '') }}>
+                          {{Lang::get('backend/permissions/labels.allow')}}
+                        </label>
+                      </div>
 
-							<div class="radio inline">
-								<label for="{{ $permission['permission'] }}_deny" onclick="">
-									<input type="radio" value="0" id="{{ $permission['permission'] }}_deny" name="permissions[{{ $permission['permission'] }}]"{{ ( ! array_get($groupPermissions, $permission['permission']) ? ' checked="checked"' : '') }}>
-									{{Lang::get('backend/general.deny')}}
-								</label>
-							</div>
-						</div>
-						@endforeach
+                      <div class="radio">
+                        <label for="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_deny" >
+                          <input type="radio" value="0" id="perm_{{ $domain_name }}_{{ $field_name }}_{{ $action }}_deny" name="permissions[{{ $domain_name }}.{{ $field_name }}.{{ $action }}]" {{ ($permissions["$domain_name.$field_name.$action"] == 0 ? ' checked="checked"' : '') }}>
+                          {{Lang::get('backend/permissions/labels.deny')}}
+                        </label>
+                      </div>
+                    </div>
 
-					</fieldset>
-					@endforeach
+                @else
+                  <span class="help-inline small">{{Lang::get('backend/permissions/labels.not_applicable')}}</span>
+                @endif
 
-				</div>
-			</div>
-		</div>
-	</div>
+              </td>
+            @endforeach
+          </tr>
+          @endif
+        @endforeach
+      </tbody>
+    </table>
+    <br/>
+    @endforeach
+
+  </fieldset>
 
 	<!-- Form Actions -->
 	<div class="control-group">
 		<div class="controls">
 			<a class="btn btn-link" href="{{ route('groups') }}">{{Lang::get('buttons.cancel')}}</a>
-
-			<button type="reset" class="btn">{{Lang::get('buttons.reset')}}</button>
-
 			<button type="submit" class="btn btn-success">{{Lang::get('backend/groups/actions.buttons.edit')}}</button>
 		</div>
 	</div>

@@ -58,15 +58,24 @@
 						</a>
 						<div class="nav-collapse collapse">
 							<ul class="nav">
-								<li{{ (Request::is('admin') ? ' class="active"' : '') }}><a href="{{ URL::to('admin') }}"><i class="icon-home icon-white"></i> {{Lang::get('backend/menu.admin_home')}}</a></li>
-								<li class="dropdown{{ (Request::is('admin/users*|admin/groups*') ? ' active' : '') }}">
-									<a class="dropdown-toggle" data-toggle="dropdown" href="{{ URL::to('admin/users') }}">
-										<i class="icon-user icon-white"></i> {{Lang::get('backend/menu.users.title')}} <span class="caret"></span>
-									</a>
-									<ul class="dropdown-menu">
-										<li{{ (Request::is('admin/users*') ? ' class="active"' : '') }}><a href="{{ URL::to('admin/users') }}"><i class="icon-user"></i> {{Lang::get('backend/menu.users.submenus.users')}}</a></li>
-										<li{{ (Request::is('admin/groups*') ? ' class="active"' : '') }}><a href="{{ URL::to('admin/groups') }}"><i class="icon-user"></i> {{Lang::get('backend/menu.users.submenus.groups')}}</a></li>
-									</ul>
+                <li{{ (Request::is('admin') ? ' class="active"' : '') }}><a href="{{ URL::to('admin') }}"><i class="icon-home icon-white"></i> {{Lang::get('backend/menu.admin_home')}}</a></li>
+                @if(Sentry::getUser()->hasAnyAccess(array('site.users.view', 'site.groups.view', 'site.permissions.view')))
+                  <li class="dropdown{{ (Request::is('admin/users*|admin/groups*|admin/permissions*') ? ' active' : '') }}">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="{{ URL::to('admin/users') }}">
+                      <i class="icon-user icon-white"></i> {{Lang::get('backend/menu.users.title')}} <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                      @if(Sentry::getUser()->hasAccess('site.users.view'))
+                          <li{{ (Request::is('admin/users*') ? ' class="active"' : '') }}><a href="{{ URL::to('admin/users') }}"><i class="icon-user"></i> {{Lang::get('backend/menu.users.submenus.users')}}</a></li>
+                      @endif
+                      @if(Sentry::getUser()->hasAccess('site.groups.view'))
+                          <li{{ (Request::is('admin/groups*') ? ' class="active"' : '') }}><a href="{{ URL::to('admin/groups') }}"><i class="icon-user"></i> {{Lang::get('backend/menu.users.submenus.groups')}}</a></li>
+                      @endif
+                      @if(Sentry::getUser()->hasAccess('site.permissions.view'))
+                          <li{{ (Request::is('admin/permissions*') ? ' class="active"' : '') }}><a href="{{ URL::to('admin/permissions') }}"><i class="icon-user"></i> {{Lang::get('backend/menu.users.submenus.permissions')}}</a></li>
+                      @endif
+                    </ul>
+                  @endif
 								</li>
 							</ul>
 							<ul class="nav pull-right">

@@ -11,6 +11,7 @@ return array(
           'submenus' => array(
               'users'		=> 'Utilisateurs',
               'groups'	=> 'Groupes',
+              'permissions'	=> 'Permissions',
               ),
           ),
   'logout'		  => 'Déconnexion'

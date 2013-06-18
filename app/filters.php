@@ -91,7 +91,7 @@ Route::filter('admin-auth', function()
 	}
 
 	// Check if the user has access to the admin page
-	if ( ! Sentry::getUser()->hasAccess('admin'))
+	if ( ! Sentry::getUser()->hasAccess('site.admin.view'))
 	{
 		// Show the insufficient permissions page
 		return App::abort(403);
